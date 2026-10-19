@@ -10,7 +10,7 @@ no accounts, no external audio services.
 Getting Started
 ---------------
 
-1. Open vinyl-player.html in any modern web browser (Chrome, Edge, Safari,
+1. Open index.html in any modern web browser (Chrome, Edge, Safari,
    Firefox).
 2. Click "Add audio files" or drag & drop audio files onto the page.
 3. Press Play, or drag the tonearm onto the record to drop the needle.
@@ -101,4 +101,10 @@ Requirements
 Files
 -----
 
-- vinyl-player.html   The entire application (HTML, CSS, and JavaScript).
+- index.html   The entire application (HTML, CSS, and JavaScript).
+
+
+License
+-------
+
+MIT. See LICENSE.
