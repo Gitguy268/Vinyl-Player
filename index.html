@@ -543,6 +543,65 @@
     .color-group .swatch-label { min-width: 24px; text-align: right; }
 
     /* ── About / Record Info ───────────────────── */
+    /* ── Label visualizer, graphic EQ and library desktop ── */
+    .viz-canvas {
+      position: absolute; top: 50%; left: 50%; width: 36%; height: 36%;
+      transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; display: none; z-index: 4;
+      /* the spindle shows through */
+      -webkit-mask: radial-gradient(circle closest-side, transparent 9%, #000 10%);
+      mask: radial-gradient(circle closest-side, transparent 9%, #000 10%);
+    }
+    .viz-canvas.on { display: block; }
+    .tracklist { position: relative; }
+    #deskBtn { position: absolute; top: 8px; right: 12px; padding: 2px 9px; font-size: 11px; }
+
+    .geq { border: 0; color: var(--text-dim); }
+    .geq legend { margin-bottom: 8px; }
+    .geq-controls { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+    .geq-controls select { flex: 1 1 10rem; min-width: 0; }
+    .geq-sliders { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 4px; max-width: 520px; }
+    .geq-sliders.off { opacity: .55; }
+    .geq-band { display: grid; justify-items: center; gap: 6px; font-size: 10px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+    .geq-band input[type="range"] { writing-mode: vertical-lr; direction: rtl; width: 4px; height: 96px; }
+    .geq-preamp { border-right: 1px solid var(--border); }
+    .geq-status { margin-top: 8px; }
+    .geq-status:empty { display: none; }
+
+    .desktop {
+      position: fixed; inset: 0; z-index: 190;
+      display: grid; grid-template-rows: auto 1fr; align-content: start;
+      background: var(--bg); color: var(--text);
+    }
+    .desktop[hidden] { display: none; }
+    .desk-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+    .desk-bar h2 { font-size: 14px; }
+    .desk-hint { flex: 1; color: var(--text-dim); font-size: 12px; }
+    .desk-icons { display: flex; flex-flow: column wrap; gap: 8px; align-content: flex-start; align-items: flex-start; min-height: 0; padding: 16px; }
+    .desk-windows { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    .desktop .desk-icon {
+      display: grid; gap: 2px; justify-items: center; width: 104px; padding: 8px;
+      text-align: center; background: none; box-shadow: none; border: 1px solid transparent; border-radius: 8px;
+    }
+    .desktop .desk-icon:hover, .desktop .desk-icon:focus-visible, .desktop .desk-icon.is-target { background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: var(--accent); }
+    .desk-glyph { font-size: 32px; line-height: 1; }
+    .desk-folder .desk-glyph::before { content: '📁'; }
+    .desk-file .desk-glyph::before { content: '🎵'; }
+    .desk-deck .desk-glyph::before { content: '💿'; }
+    .desk-name { font-size: 12px; overflow-wrap: anywhere; }
+    .desk-meta { color: var(--text-dim); font-size: 11px; }
+    .desk-window {
+      position: absolute; display: grid; grid-template-rows: auto 1fr;
+      width: min(420px, calc(100vw - 32px)); max-height: 60vh; pointer-events: auto;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow);
+    }
+    .desk-window-bar {
+      display: flex; gap: 8px; align-items: center; justify-content: space-between;
+      padding: 4px 4px 4px 10px; font-size: 12px; font-weight: 600; cursor: grab; touch-action: none;
+      background: var(--surface2); border-bottom: 1px solid var(--border); border-radius: 8px 8px 0 0;
+    }
+    .desktop .desk-close { min-width: 32px; min-height: 32px; padding: 0; background: none; box-shadow: none; border: 0; }
+    .desk-window-body { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; overflow: auto; }
+
     .about-wrap { width: 100%; }
     .about-toggle {
       width: 100%; border-radius: 10px;
@@ -748,6 +807,7 @@
           <div class="vinyl-iridescent"></div>
           <div class="vinyl-dust"></div>
         </div>
+        <canvas class="viz-canvas" id="vizCanvas" aria-hidden="true"></canvas>
         <canvas class="bass-canvas" id="bassCanvas" width="400" height="400"></canvas>
         <div class="vinyl-glow"></div>
       </div>
@@ -765,6 +825,7 @@
 
     <div class="tracklist" role="list" aria-label="Tracklist">
       <h3>Tracklist</h3>
+      <button id="deskBtn" aria-controls="desktop" title="Library desktop: artists and albums as folders">🗂 Desktop</button>
       <ol id="tracklistOl" role="list"></ol>
       <div class="tracklist-empty" id="tracklistEmpty">No tracks — drag & drop or add files above</div>
     </div>
@@ -823,6 +884,10 @@
       <div class="group"><span id="midLabel">Mid</span><input type="range" id="midSlider" min="-12" max="12" step="1" value="0" aria-label="Mid EQ"></div>
       <div class="group"><span id="trebleLabel">Treble</span><input type="range" id="trebleSlider" min="-12" max="12" step="1" value="0" aria-label="Treble EQ"></div>
       <div class="group"><span>Vinyl noise</span><input type="range" id="noiseSlider" min="0" max="1" step=".01" value="0" aria-label="Vinyl noise level"></div>
+      <div class="group"><span>Visualizer</span><select id="vizSel" aria-label="Visualizer on the record label">
+        <option value="off">Off</option><option value="lines">Lines</option><option value="scope">Scope</option>
+        <option value="spectrogram">Spectrogram</option><option value="radial">Radial</option>
+      </select></div>
     </div>
 
     <div class="about-wrap" id="aboutWrap">
@@ -850,6 +915,25 @@
       </div>
     </div>
 
+    <div class="about-wrap" id="geqWrap">
+      <button class="about-toggle" id="geqToggle" aria-expanded="false" aria-controls="geqBody">
+        <span>Graphic EQ</span><span class="arrow">▼</span>
+      </button>
+      <div class="about-body" id="geqBody">
+        <fieldset class="geq">
+          <legend>Winamp's ten bands, in dB</legend>
+          <div class="geq-controls">
+            <label><input type="checkbox" id="geqOn"> On</label>
+            <select id="geqPreset" aria-label="EQ preset"></select>
+            <button type="button" id="geqLoad">Load .eqf</button>
+            <input type="file" id="geqFile" accept=".eqf,.q1" hidden aria-label="Winamp EQ preset file">
+          </div>
+          <div class="geq-sliders" id="geqSliders"></div>
+          <p class="geq-status" id="geqStatus" role="status"></p>
+        </fieldset>
+      </div>
+    </div>
+
     <div class="focus-bar">
       <button id="focusBtn" title="Focus mode" aria-label="Toggle focus mode">⛶ Focus</button>
     </div>
@@ -867,6 +951,8 @@
       <button class="fc-btn" id="fcExit" aria-label="Exit focus mode">✕</button>
     </div>
   </div>
+
+  <div class="desktop" id="desktop" hidden></div>
 
   <audio id="audio" preload="auto" crossorigin="anonymous"></audio>
 
@@ -939,6 +1025,7 @@
         'app','turntable','vinylWrap','vinyl','tonearm','highlight',
         'coverImg','noCover','playBtn','prevBtn','nextBtn','shuffleBtn',
         'repeatBtn','rpmSel','themeSel','modeBtn','focusBtn',
+        'vizCanvas','vizSel','geqWrap','geqToggle','geqOn','geqPreset','geqLoad','geqFile','geqSliders','geqStatus','deskBtn','desktop',
         'aboutToggle','aboutWrap','aboutBody',
         'vol','bassSlider','midSlider','trebleSlider','noiseSlider',
         'scratchChk','sfxChk',
@@ -994,6 +1081,8 @@
       bassEQ: null,
       midEQ: null,
       trebleEQ: null,
+      eqTrim: null,           // graphic EQ: preamp and headroom ahead of its ten bands
+      eqBands: [],
       masterGain: null,
       globalGain: null,
       noiseNode: null,
@@ -1266,13 +1355,16 @@
           State.midEQ.type = 'peaking'; State.midEQ.frequency.value = 1000; State.midEQ.Q.value = 1;
           State.trebleEQ = ctx.createBiquadFilter();
           State.trebleEQ.type = 'highshelf'; State.trebleEQ.frequency.value = 4000;
+          State.eqTrim = ctx.createGain();
+          State.eqBands = Geq.BANDS.map((f, i) => { const b = ctx.createBiquadFilter(); b.type = Geq.type(i); b.frequency.value = f; return b; });
           State.masterGain = ctx.createGain();
           State.masterGain.gain.value = 1;
           State.analyser = ctx.createAnalyser();
           State.analyser.fftSize = 256;
           State.freqData = new Uint8Array(State.analyser.frequencyBinCount);
           State.srcNode.connect(State.bassEQ).connect(State.midEQ)
-            .connect(State.trebleEQ).connect(State.masterGain)
+            .connect(State.trebleEQ).connect(State.eqTrim);
+          State.eqBands.reduce((n, b) => n.connect(b), State.eqTrim).connect(State.masterGain)
             .connect(State.analyser).connect(State.globalGain);
 
           const sr = ctx.sampleRate;
@@ -1304,6 +1396,8 @@
         State.bassEQ?.gain.setTargetAtTime(parseFloat(DOM.bassSlider.value), t, 0.05);
         State.midEQ?.gain.setTargetAtTime(parseFloat(DOM.midSlider.value), t, 0.05);
         State.trebleEQ?.gain.setTargetAtTime(parseFloat(DOM.trebleSlider.value), t, 0.05);
+        State.eqTrim?.gain.setTargetAtTime(Geq.trim, t, 0.05);                 // graphic EQ: off leaves every band at 0 dB
+        State.eqBands.forEach((b, i) => b.gain.setTargetAtTime(Geq.v?.on ? Geq.v.bands[i] : 0, t, 0.05));
         const noiseActive = (State.playing || State.vinylDragging) && State.needleOn;
         const nv = noiseActive ? parseFloat(DOM.noiseSlider.value) * 0.25 : 0;
         State.noiseGain?.gain.setTargetAtTime(nv, t, 0.1);
@@ -1546,6 +1640,7 @@
             shuffle: State.shuffleOn,
             repeat: State.repeatMode,
             rpm: State.currentRPM,
+            viz: Viz.mode,
             albumInfo: {
               artist: DOM.aboutArtist.innerText,
               year: DOM.aboutYear.innerText,
@@ -1655,6 +1750,7 @@
           });
           DOM.tracklistOl.appendChild(li);
         });
+        Desk.refresh();
       },
 
       scrollActiveTrack() {
@@ -2063,6 +2159,7 @@
         if (p.shuffle !== undefined) { State.shuffleOn = p.shuffle; UI.updateShuffleBtn(); }
         if (p.repeat !== undefined) { State.repeatMode = p.repeat; UI.updateRepeatBtn(); }
         if (p.rpm !== undefined) { State.currentRPM = p.rpm; UI.updateRPM(); }
+        if (Viz.MODES.includes(p.viz)) Viz.mode = p.viz;
         if (p.hasCustomColors) {
           State.hasCustomColors = true;
           document.body.classList.add('has-custom-colors');
@@ -2242,6 +2339,7 @@
 
       setupKeyboard() {
         document.addEventListener('keydown', e => {
+          if (!DOM.desktop.hidden) return;                                // the desktop's buttons take the keys while it is open
           if (e.target.isContentEditable || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
           switch (e.key) {
             case ' ':
@@ -2475,6 +2573,499 @@
       }
     };
 
+    // ─── GRAPHIC EQ (Winamp's ten bands after the tone controls, off by default. The band layout and the preset values
+    //     come from Webamp, github.com/captbaritone/webamp, MIT License, Copyright (c) 2015 Jordan Eldredge. Winamp is a
+    //     trademark of its owner; this player is not affiliated with it.) Stored under keys every player shares. ──
+    const Geq = {
+      BANDS: [60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000],
+      KEY: 'vinyl-eq', PRESETS_KEY: 'vinyl-eq-presets', MAX_IMPORTED: 50,
+      // Webamp's presets/builtin.json in Winamp's slider values (1 to 64): preamp, then the ten bands
+      BUILT_IN: [
+        ['Classical', [33, 33, 33, 33, 33, 33, 33, 20, 20, 20, 16]], ['Club', [33, 33, 33, 38, 42, 42, 42, 38, 33, 33, 33]],
+        ['Dance', [33, 48, 44, 36, 32, 32, 22, 20, 20, 32, 32]], ['Laptop speakers/headphones', [33, 40, 50, 41, 26, 28, 35, 40, 48, 53, 56]],
+        ['Large hall', [33, 49, 49, 42, 42, 33, 24, 24, 24, 33, 33]], ['Party', [33, 44, 44, 33, 33, 33, 33, 33, 33, 44, 44]],
+        ['Pop', [33, 29, 40, 44, 45, 41, 30, 28, 28, 29, 29]], ['Reggae', [33, 33, 33, 31, 22, 33, 43, 43, 33, 33, 33]],
+        ['Rock', [33, 45, 40, 23, 19, 26, 39, 47, 50, 50, 50]], ['Soft', [33, 40, 35, 30, 28, 30, 39, 46, 48, 50, 52]],
+        ['Ska', [33, 28, 24, 25, 31, 39, 42, 47, 48, 50, 48]], ['Full Bass', [33, 48, 48, 48, 42, 35, 25, 18, 15, 14, 14]],
+        ['Soft Rock', [33, 39, 39, 36, 31, 25, 23, 26, 31, 37, 47]], ['Full Treble', [33, 16, 16, 16, 25, 37, 50, 58, 58, 58, 60]],
+        ['Full Bass & Treble', [33, 44, 42, 33, 20, 24, 35, 46, 50, 52, 52]], ['Live', [33, 24, 33, 39, 41, 42, 42, 39, 37, 37, 36]],
+        ['Techno', [33, 45, 42, 33, 23, 24, 33, 45, 48, 48, 47]]
+      ],
+      v: null, trim: 1, winamp: [], imported: [], pre: null, inputs: [],
+
+      type: i => i === 0 ? 'lowshelf' : i === 9 ? 'highshelf' : 'peaking',
+      clamp: db => Number.isFinite(db) ? Utils.clamp(db, -12, 12) : 0,
+      /** Winamp's slider value to dB: 33 is 0 dB, 64 is +12 and 1 is -12, so the steps differ slightly above and below. */
+      toDb: x => Math.round((x - 33) / (x >= 33 ? 31 : 32) * 120) / 10,
+      fromValues: (name, [pre = 33, ...bands]) => ({ name, preamp: Geq.toDb(pre), bands: bands.map(Geq.toDb) }),
+
+      /** The presets in a Winamp .eqf (or winamp.q1) file. After the header, each entry is a 257-byte name and eleven
+          bytes, the bands then the preamp, where 0 is +12 dB and 63 is -12 dB. Throws when the file is not one. */
+      parseEqf(buf) {
+        const b = new Uint8Array(buf), head = 'Winamp EQ library file v1.1', out = [];
+        if (String.fromCharCode(...b.subarray(0, head.length)) !== head) throw new Error('Not a Winamp .eqf file.');
+        for (let at = head.length + 4; at + 268 <= b.length; at += 268) {      // the header ends in Ctrl-Z and "!--"
+          const nb = b.subarray(at, at + 257), end = nb.indexOf(0);
+          const name = new TextDecoder('latin1').decode(nb.subarray(0, end < 0 ? 257 : end)).trim();
+          const vals = [...b.subarray(at + 257, at + 268)].map(x => 64 - x);
+          out.push(Geq.fromValues(name || 'Imported', [vals.pop(), ...vals]));
+        }
+        if (!out.length) throw new Error('The .eqf file holds no presets.');
+        return out;
+      },
+
+      dbList: v => Array.isArray(v) && v.length === 10 ? v.map(x => typeof x === 'number' ? Geq.clamp(x) : 0) : null,
+      /** Valid EQ settings from stored data, field by field: off and flat unless the data says otherwise. */
+      parse(raw) {
+        const s = raw && typeof raw === 'object' ? raw : {};
+        return {
+          on: typeof s.on === 'boolean' ? s.on : false,
+          preamp: typeof s.preamp === 'number' ? Geq.clamp(s.preamp) : 0,
+          bands: Geq.dbList(s.bands) || Geq.BANDS.map(() => 0),
+          preset: typeof s.preset === 'string' ? s.preset.slice(0, 256) : ''
+        };
+      },
+      /** Valid imported presets from stored data; bad entries are dropped. */
+      parsePresets(raw) {
+        return !Array.isArray(raw) ? [] : raw.flatMap(p => {
+          const bands = p && typeof p === 'object' && Geq.dbList(p.bands);
+          return bands && typeof p.name === 'string' && p.name && typeof p.preamp === 'number'
+            ? [{ name: p.name.slice(0, 256), preamp: Geq.clamp(p.preamp), bands }] : [];
+        });
+      },
+
+      /** Gain in dB at hz of band i, from the Web Audio spec's biquad formulas (Q 1, which Winamp's peaking bands keep). */
+      bandDb(i, db, hz) {
+        if (!db) return 0;
+        const A = 10 ** (db / 40), w0 = 2 * Math.PI * Geq.BANDS[i] / 48000, cos = Math.cos(w0), w = 2 * Math.PI * hz / 48000, type = Geq.type(i);
+        let b, a;
+        if (type === 'peaking') {
+          const al = Math.sin(w0) / 2;
+          b = [1 + al * A, -2 * cos, 1 - al * A]; a = [1 + al / A, -2 * cos, 1 - al / A];
+        } else {
+          const k = 2 * Math.sqrt(A) * (Math.sin(w0) / 2 * Math.SQRT2), s = type === 'lowshelf' ? 1 : -1;
+          b = [A * (A + 1 - s * (A - 1) * cos + k), s * 2 * A * (A - 1 - s * (A + 1) * cos), A * (A + 1 - s * (A - 1) * cos - k)];
+          a = [A + 1 + s * (A - 1) * cos + k, -s * 2 * (A - 1 + s * (A + 1) * cos), A + 1 + s * (A - 1) * cos - k];
+        }
+        const at = c => Math.hypot(c[0] + c[1] * Math.cos(w) + c[2] * Math.cos(2 * w), c[1] * Math.sin(w) + c[2] * Math.sin(2 * w));
+        return 20 * Math.log10(at(b) / at(a));
+      },
+      /** The largest boost the bands give anywhere from 20 Hz to 20 kHz, in dB (0 or more). */
+      peakDb(eq) {
+        if (!eq.on) return 0;
+        let peak = 0;
+        for (let s = 0; s <= 240; s++) {
+          const hz = 20 * 1000 ** (s / 240);
+          peak = Math.max(peak, eq.bands.reduce((sum, db, i) => sum + Geq.bandDb(i, db, hz), 0));
+        }
+        return peak;
+      },
+      /** Gain ahead of the bands: the preamp, lowered by the largest boost (plus 0.2 dB for rounding) so the output cannot
+          pass full scale. A raise is only kept as far as it fits. */
+      inputGain(eq) {
+        if (!eq.on) return 1;
+        const boost = Geq.peakDb(eq) + eq.preamp;
+        return (boost > 0 ? 10 ** (-(boost + 0.2) / 20) : 1) * 10 ** (eq.preamp / 20);
+      },
+
+      read(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } },
+      write(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch {} },
+
+      /** Builds the preamp and band faders and restores the saved settings. */
+      mount() {
+        Geq.v = Geq.parse(Geq.read(Geq.KEY));
+        Geq.imported = Geq.parsePresets(Geq.read(Geq.PRESETS_KEY)).slice(-Geq.MAX_IMPORTED);
+        Geq.winamp = Geq.BUILT_IN.map(([n, vals]) => Geq.fromValues(n, vals));
+        const fader = (id, label, db) => {
+          const wrap = document.createElement('div'), input = document.createElement('input');
+          const out = document.createElement('output'), name = document.createElement('label');
+          wrap.className = 'geq-band';
+          Object.assign(input, { id, type: 'range', min: -12, max: 12, step: 0.1, value: db });
+          name.htmlFor = id; name.textContent = label; out.htmlFor.add(id);
+          wrap.append(out, input, name);
+          DOM.geqSliders.append(wrap);
+          input.addEventListener('input', () => { Geq.v.preset = ''; DOM.geqPreset.value = ''; Geq.changed(); });
+          return input;
+        };
+        Geq.pre = fader('geqPre', 'Pre', Geq.v.preamp);
+        Geq.pre.parentElement.classList.add('geq-preamp');
+        Geq.inputs = Geq.BANDS.map((hz, i) => fader('geq' + hz, hz >= 1000 ? hz / 1000 + 'k' : String(hz), Geq.v.bands[i]));
+        DOM.geqOn.checked = Geq.v.on;
+        DOM.geqOn.addEventListener('change', () => Geq.changed());
+        DOM.geqPreset.addEventListener('change', () => {
+          const sel = DOM.geqPreset.value, p = (sel[0] === 'w' ? Geq.winamp : Geq.imported)[+sel.slice(1)];
+          if (sel && p) Geq.use(p);
+        });
+        DOM.geqLoad.addEventListener('click', () => DOM.geqFile.click());
+        DOM.geqFile.addEventListener('change', async () => {
+          const file = DOM.geqFile.files[0];
+          DOM.geqFile.value = '';
+          if (!file) return;
+          try {
+            const found = Geq.parseEqf(await file.arrayBuffer()), names = new Set(found.map(p => p.name));
+            Geq.imported = [...Geq.imported.filter(p => !names.has(p.name)), ...found].slice(-Geq.MAX_IMPORTED);
+            Geq.write(Geq.PRESETS_KEY, Geq.imported);
+            Geq.use(found[0]);
+            DOM.geqStatus.textContent = found.length === 1 ? `EQ preset "${found[0].name}" loaded.` : `${found.length} EQ presets loaded.`;
+          } catch { DOM.geqStatus.textContent = `${file.name} is not a Winamp EQ preset file (.eqf).`; }
+        });
+        DOM.geqToggle.addEventListener('click', () => {
+          AudioEngine.ensure(); AudioEngine.playClick();
+          DOM.geqToggle.setAttribute('aria-expanded', DOM.geqWrap.classList.toggle('open'));
+        });
+        Geq.trim = Geq.inputGain(Geq.v);
+        Geq.fill();
+        Geq.show();
+      },
+
+      /** A preset moves the faders and switches the EQ on. */
+      use(p) {
+        Geq.v.preset = p.name;
+        Geq.pre.value = p.preamp;
+        Geq.inputs.forEach((input, i) => { input.value = p.bands[i]; });
+        DOM.geqOn.checked = true;
+        Geq.changed();
+        Geq.fill();
+      },
+
+      /** Reads the controls, remembers them and sends them to the filters. */
+      changed() {
+        Geq.v = { on: DOM.geqOn.checked, preamp: Geq.clamp(+Geq.pre.value), bands: Geq.inputs.map(i => Geq.clamp(+i.value)), preset: Geq.v.preset };
+        Geq.trim = Geq.inputGain(Geq.v);
+        Geq.write(Geq.KEY, Geq.v);
+        Geq.show();
+        AudioEngine.updateParams();
+      },
+
+      show() {
+        [Geq.pre, ...Geq.inputs].forEach((input, i) => {
+          const db = +input.value, t = (db > 0 ? '+' : db < 0 ? '−' : '') + Math.abs(db).toFixed(1).replace('.0', '');
+          input.parentElement.querySelector('output').textContent = t;      // the legend says dB; the columns are narrow
+          input.setAttribute('aria-label', i ? Geq.BANDS[i - 1] + ' Hz' : 'Preamp');
+          input.setAttribute('aria-valuetext', (i ? Geq.BANDS[i - 1] + ' hertz' : 'Preamp') + ': ' + t.replace('−', 'minus ') + ' decibels');
+        });
+        DOM.geqSliders.classList.toggle('off', !DOM.geqOn.checked);
+      },
+
+      fill() {
+        const sel = DOM.geqPreset;
+        sel.replaceChildren(new Option('Presets…', ''));
+        for (const [label, list, k] of [['Winamp', Geq.winamp, 'w'], ['Imported', Geq.imported, 'i']]) {
+          if (!list.length) continue;
+          const g = document.createElement('optgroup');
+          g.label = label;
+          list.forEach((p, i) => g.append(new Option(p.name, k + i)));
+          sel.append(g);
+        }
+        sel.value = [...sel.options].find(o => o.text === Geq.v.preset)?.value || '';
+      }
+    };
+
+    // ─── LABEL VISUALIZER (covers the label while a record plays and stays upright as the record turns) ──
+    const Viz = {
+      PX: 512, LW: 2, GLOW: 8,    // canvas size, line width and scope glow in canvas pixels
+      SCOPES: { floor: -90, range: 70, rows: 18, points: 61, spectroRows: 128, step: 3, radial: 48 },   // dB drawn as nothing, dB to full height, ridgelines and their points, spectrogram rows and px per frame, radial bands
+      MODES: ['off', 'lines', 'scope', 'spectrogram', 'radial'],
+      mode: 'off', shown: 'off', an: null, spec: null, wave: null, draw: null,
+      calm: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false,
+
+      /** Its own analyser: the bass ring's is too coarse. */
+      listen() {
+        if (Viz.an) return;
+        Viz.an = State.audioCtx.createAnalyser();
+        Viz.an.fftSize = 2048; Viz.an.smoothingTimeConstant = Viz.smoothing(Viz.shown);
+        State.analyser.connect(Viz.an);
+        Viz.spec = new Float32Array(Viz.an.frequencyBinCount);
+      },
+
+      /** The radial spectrum eases by itself; the other styles take the analyser's smoothing. */
+      smoothing: m => m === 'radial' ? 0 : 0.5,
+
+      /** A clean canvas for a new style: the spectrogram scrolls what is there and the scope fades it. */
+      reset(mode) {
+        Viz.draw = null;
+        if (Viz.an) Viz.an.smoothingTimeConstant = Viz.smoothing(mode);
+        const cv = DOM.vizCanvas, px = Viz.PX, g = cv.getContext('2d');
+        if (cv.width !== px) cv.width = cv.height = px;
+        g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+        g.fillStyle = '#151515'; g.fillRect(0, 0, px, px);
+      },
+
+      // Lines, Scope, Spectrogram and Radial are ideas found through awesome-audio-visualization
+      // (github.com/willianjusten/awesome-audio-visualization, CC0): its "Lines" experiment (the Unknown Pleasures look),
+      // oscilloscopes, scrolling spectrograms and circular spectra such as "Awesome Audio Player" and "CircleLineNERDDISCO".
+      // They are drawn from scratch; no code is taken from any of them.
+
+      /** First FFT bin of each of n bands spaced evenly on a log scale from first to last, and one more closing the
+          last band. Every band holds at least one bin. */
+      logEdges(last, n, first = 1) {
+        const e = [];
+        for (let i = 0; i <= n; i++) e.push(Math.min(last, Math.max(Math.round(first * (last / first) ** (i / n)), (i ? e[i - 1] : first - 1) + 1)));
+        for (let i = n - 1; i >= 0; i--) e[i] = Math.min(e[i], e[i + 1] - 1);   // forced steps pile up on the last bin: spread them back down
+        return e;
+      },
+      /** The bins from about 45 Hz to 16 kHz, where music has something to show. */
+      musicBins(count, rate) { const hz = rate / 2 / count; return [Math.max(1, Math.round(45 / hz)), Math.min(count, Math.round(16000 / hz))]; },
+      /** The loudest bin of each band, as 0 to 1. */
+      levels(spec, edges, out) {
+        const k = Viz.SCOPES;
+        for (let i = 0; i < out.length; i++) {
+          let peak = -Infinity;
+          for (let q = edges[i]; q < edges[i + 1]; q++) peak = Math.max(peak, spec[q]);
+          out[i] = Utils.clamp((peak - k.floor) / k.range, 0, 1);
+        }
+      },
+      /** The last rows frames of levels in a ring; row 0 is the oldest. */
+      history(rows, n) {
+        const frames = Array.from({ length: rows }, () => new Float32Array(n));
+        let next = 0;
+        return { push(v) { frames[next].set(v); next = (next + 1) % rows; }, row: i => frames[(next + i) % rows] };
+      },
+      /** The first rise through zero in the first half of the samples, or 0: where the scope starts, so it holds still. */
+      zeroCross(w) { for (let i = 1, end = w.length >> 1; i < end; i++) if (w[i - 1] < 0 && w[i] >= 0) return i; return 0; },
+      HEAT: [[21, 21, 21], [64, 18, 110], [190, 40, 90], [245, 120, 40], [255, 220, 90], [255, 255, 235]],
+      /** Spectrogram colour for a level of 0 to 1: the label's black, through purple and red, to white. */
+      heat(v) {
+        const H = Viz.HEAT, t = Utils.clamp(v, 0, 1) * (H.length - 1), i = Math.min(H.length - 2, Math.floor(t)), f = t - i;
+        return H[i].map((c, j) => Math.round(c + (H[i + 1][j] - c) * f));
+      },
+
+      /** Each style returns draw(g, spec, wave, dt) holding its own state. */
+      styles: {
+        lines([first, last]) {
+          const k = Viz.SCOPES, px = Viz.PX, half = Math.ceil(k.points / 2), edges = Viz.logEdges(last, half, first);
+          const lv = new Float32Array(half), hist = Viz.history(k.rows, half);
+          const left = 0.17 * px, width = 0.66 * px, top = 0.34 * px, gap = 0.42 * px / k.rows, lift = 0.2 * px;
+          return (g, spec) => {
+            Viz.levels(spec, edges, lv); hist.push(lv);
+            g.fillStyle = '#151515'; g.fillRect(0, 0, px, px);
+            g.lineWidth = Viz.LW; g.lineJoin = 'round'; g.strokeStyle = '#f0ede6';
+            for (let row = 0; row < k.rows; row++) {                     // oldest at the top; each newer line is filled, hiding those behind it
+              const line = hist.row(row), base = top + row * gap;
+              g.beginPath(); g.moveTo(left, base);
+              for (let i = 0; i < k.points; i++) {
+                const off = Math.abs(2 * i / (k.points - 1) - 1);        // mirrored, bass in the middle as on the pulsar plot
+                const taper = Math.cos(off * Math.PI / 2) ** 0.6;         // the ends run flat into the baseline
+                g.lineTo(left + i / (k.points - 1) * width, base - lift * line[Math.min(half - 1, Math.round(off * (half - 1)))] ** 2 * taper);
+              }
+              g.lineTo(left + width, base); g.fillStyle = '#151515'; g.fill(); g.stroke();
+            }
+          };
+        },
+        scope() {
+          const px = Viz.PX;
+          return (g, spec, wave) => {
+            g.globalAlpha = 0.35; g.fillStyle = '#151515'; g.fillRect(0, 0, px, px); g.globalAlpha = 1;   // fading the last trace leaves a phosphor trail
+            const start = Viz.zeroCross(wave), n = wave.length >> 1;
+            g.beginPath();
+            for (let i = 0; i < n; i++) g.lineTo(0.08 * px + i / (n - 1) * 0.84 * px, px / 2 - wave[start + i] * 0.3 * px);
+            g.lineWidth = Viz.LW; g.strokeStyle = '#7dff9a'; g.shadowColor = '#3cff6e'; g.shadowBlur = Viz.GLOW; g.stroke(); g.shadowBlur = 0;
+          };
+        },
+        spectrogram([first, last]) {
+          const k = Viz.SCOPES, px = Viz.PX, rows = k.spectroRows, edges = Viz.logEdges(last, rows, first), lv = new Float32Array(rows);
+          const bottom = 0.84 * px, h = 0.68 * px / rows;                 // the rows stay inside the round label
+          return (g, spec) => {
+            g.drawImage(g.canvas, -k.step, 0);                            // scroll left; the newest column on the right, low notes at the bottom
+            Viz.levels(spec, edges, lv);
+            for (let r = 0; r < rows; r++) {
+              const [R, G, B] = Viz.heat(lv[r]);
+              g.fillStyle = `rgb(${R},${G},${B})`; g.fillRect(px - k.step, bottom - (r + 1) * h, k.step, h + 0.5);
+            }
+          };
+        },
+        radial([first, last]) {
+          const k = Viz.SCOPES, px = Viz.PX, n = k.radial, edges = Viz.logEdges(last, n, first), lv = new Float32Array(n), eased = new Float32Array(n);
+          const c = px / 2, inner = 0.1 * px, reach = 0.36 * px;          // clear of the spindle
+          return (g, spec, wave, dt) => {
+            Viz.levels(spec, edges, lv);
+            g.fillStyle = '#151515'; g.fillRect(0, 0, px, px);
+            g.globalCompositeOperation = 'lighter'; g.lineCap = 'round'; g.lineWidth = Math.PI / n * inner * 0.9;
+            for (let i = 0; i < n; i++) {
+              eased[i] += (lv[i] - eased[i]) * Math.min(1, 10 * dt);
+              const len = reach * eased[i] ** 2;
+              if (len < 0.5) continue;
+              g.strokeStyle = `hsl(${i / n * 300}, 100%, 62.5%)`;
+              for (const side of [1, -1]) {                               // bass at the top, mirrored down both sides
+                const a = -Math.PI / 2 + side * (i + 0.5) / n * Math.PI, x = Math.cos(a), y = Math.sin(a);
+                g.beginPath(); g.moveTo(c + x * inner, c + y * inner); g.lineTo(c + x * (inner + len), c + y * (inner + len)); g.stroke();
+              }
+            }
+            g.globalCompositeOperation = 'source-over';
+          };
+        }
+      },
+
+      drawScope(mode, dt) {
+        Viz.listen();
+        if (!Viz.draw) {
+          Viz.draw = Viz.styles[mode](Viz.musicBins(Viz.spec.length, State.audioCtx.sampleRate));
+          Viz.wave = Viz.wave || new Float32Array(Viz.an.fftSize);
+        }
+        Viz.an.getFloatFrequencyData(Viz.spec);
+        if (mode === 'scope') Viz.an.getFloatTimeDomainData(Viz.wave);
+        Viz.draw(DOM.vizCanvas.getContext('2d'), Viz.spec, Viz.wave, dt);
+      },
+
+      /** One frame of the chosen style while the needle plays; otherwise the canvas is hidden and the label shows. */
+      frame(dt) {
+        const mode = State.playing && State.needleOn && State.analyser && !Viz.calm ? Viz.mode : 'off';
+        if (mode !== Viz.shown) {
+          Viz.shown = mode;
+          DOM.vizCanvas.classList.toggle('on', mode !== 'off');
+          Viz.reset(mode);
+        }
+        if (mode !== 'off') Viz.drawScope(mode, dt);
+      },
+
+      bind() {
+        DOM.vizSel.value = Viz.mode;
+        DOM.vizSel.addEventListener('change', () => {
+          AudioEngine.ensure();
+          Viz.mode = Viz.MODES.includes(DOM.vizSel.value) ? DOM.vizSel.value : 'off';
+          Persistence.savePrefs();
+        });
+      }
+    };
+
+    // ─── LIBRARY DESKTOP (artists and albums as folders, tracks as files to open or drag onto the turntable. The idea is
+    //     Winampify's, github.com/remigallego/winampify, MIT License; no code is taken from it.) ──
+    const Desk = {
+      TYPE: 'application/x-vinyl-track',   // not "Files", so the page's file drop leaves a dragged track alone
+      top: 0, opened: 0, icons: null, wins: null,
+
+      /** Artist folders holding album folders, sorted by name with the unknown ones last. Tracks keep their order. */
+      group(tracks) {
+        const col = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+        const byName = unknown => (a, b) => (a.name === unknown) - (b.name === unknown) || col.compare(a.name, b.name);
+        const artists = new Map();
+        for (const t of tracks) {
+          const ar = (t.artist || '').trim() || 'Unknown artist', al = (t.album || '').trim() || 'Unknown album';
+          if (!artists.has(ar)) artists.set(ar, new Map());
+          const albums = artists.get(ar);
+          albums.set(al, [...(albums.get(al) || []), t]);
+        }
+        return [...artists].map(([name, albums]) => ({
+          name, albums: [...albums].map(([album, list]) => ({ name: album, tracks: list })).sort(byName('Unknown album'))
+        })).sort(byName('Unknown artist'));
+      },
+
+      icon(kind, label, detail) {
+        const b = document.createElement('button'), glyph = document.createElement('span'), name = document.createElement('span');
+        b.type = 'button'; b.className = 'desk-icon desk-' + kind;
+        glyph.className = 'desk-glyph'; glyph.setAttribute('aria-hidden', 'true');
+        name.className = 'desk-name'; name.textContent = label;
+        b.append(glyph, name);
+        if (detail) { const meta = document.createElement('span'); meta.className = 'desk-meta'; meta.textContent = detail; b.append(meta); }
+        return b;
+      },
+
+      /** Mouse users double-click; keyboard and touch activations arrive as single clicks. */
+      onOpen(b, fn) {
+        b.addEventListener('click', e => { if (e.detail === 0 || e.pointerType === 'touch' || e.pointerType === 'pen') fn(); });
+        b.addEventListener('dblclick', fn);
+      },
+
+      play(id) {
+        const i = State.playlist.findIndex(t => String(t.id) === id);
+        if (i < 0) return;
+        AudioEngine.ensure(); AudioEngine.playClick(); UI.bumpTurntable();
+        Player.stop(); Player.loadTrack(i); Player.play();
+      },
+
+      front: () => [...Desk.wins.querySelectorAll('.desk-window')].sort((a, b) => b.style.zIndex - a.style.zIndex)[0],
+      focusFront() { (Desk.front() || Desk.icons).querySelector('button')?.focus(); },
+
+      open(name, fill) {
+        const win = document.createElement('section'), head = document.createElement('div'), body = document.createElement('div');
+        const label = document.createElement('span'), shut = document.createElement('button');
+        win.className = 'desk-window'; win.setAttribute('role', 'dialog'); win.setAttribute('aria-label', name);
+        head.className = 'desk-window-bar'; label.textContent = name;
+        shut.type = 'button'; shut.className = 'desk-close'; shut.textContent = '✕'; shut.setAttribute('aria-label', 'Close ' + name);
+        body.className = 'desk-window-body';
+        head.append(label, shut); fill(body); win.append(head, body);
+        const step = (Desk.opened++ % 8) * 28, base = Desk.wins.clientWidth > 640 ? 150 : 8;   // clear of the icon column where there is room
+        win.style.left = base + step + 'px'; win.style.top = 72 + step + 'px';
+        win.style.zIndex = ++Desk.top;
+        Desk.wins.append(win);
+        win.addEventListener('pointerdown', () => { win.style.zIndex = ++Desk.top; });
+        shut.addEventListener('click', () => { win.remove(); Desk.focusFront(); });
+        head.addEventListener('pointerdown', e => {                       // dragged by the title bar
+          if (e.target === shut) return;
+          const dx = e.clientX - win.offsetLeft, dy = e.clientY - win.offsetTop;
+          head.setPointerCapture(e.pointerId);
+          const move = m => {
+            win.style.left = Utils.clamp(m.clientX - dx, 0, Desk.wins.clientWidth - 80) + 'px';
+            win.style.top = Utils.clamp(m.clientY - dy, 0, Desk.wins.clientHeight - 32) + 'px';
+          };
+          const up = () => { head.removeEventListener('pointermove', move); head.removeEventListener('pointerup', up); };
+          head.addEventListener('pointermove', move); head.addEventListener('pointerup', up);
+        });
+        body.querySelector('button')?.focus();
+      },
+
+      openArtist(artist) {
+        Desk.open(artist.name, body => artist.albums.forEach(album => {
+          const n = album.tracks.length, folder = Desk.icon('folder', album.name, n + (n === 1 ? ' track' : ' tracks'));
+          Desk.onOpen(folder, () => Desk.open(artist.name + ' — ' + album.name, list => album.tracks.forEach(t => {
+            const file = Desk.icon('file', t.name, t.duration > 0 ? Utils.formatTime(t.duration) : '');
+            file.draggable = true; file.dataset.id = t.id;
+            Desk.onOpen(file, () => Desk.play(String(t.id)));
+            file.addEventListener('dragstart', e => { e.dataTransfer.setData(Desk.TYPE, String(t.id)); e.dataTransfer.effectAllowed = 'copy'; });
+            list.append(file);
+          })));
+          body.append(folder);
+        }));
+      },
+
+      render() {
+        const deck = Desk.icon('deck', 'Turntable', 'Drop a track to play');
+        Desk.onOpen(deck, Desk.hide);
+        deck.addEventListener('dragover', e => { if (!e.dataTransfer?.types?.includes(Desk.TYPE)) return; e.preventDefault(); deck.classList.add('is-target'); });
+        deck.addEventListener('dragleave', () => deck.classList.remove('is-target'));
+        deck.addEventListener('drop', e => { deck.classList.remove('is-target'); const id = e.dataTransfer?.getData(Desk.TYPE); if (id) Desk.play(id); });
+        const artists = Desk.group(State.playlist).map(a => {
+          const f = Desk.icon('folder', a.name, a.albums.length + (a.albums.length === 1 ? ' album' : ' albums'));
+          Desk.onOpen(f, () => Desk.openArtist(a));
+          return f;
+        });
+        const empty = document.createElement('p');
+        empty.className = 'desk-hint'; empty.textContent = 'The library is empty. Add files first.';
+        Desk.icons.replaceChildren(deck, ...(artists.length ? artists : [empty]));
+      },
+
+      show() {
+        Desk.render(); Desk.wins.replaceChildren();
+        DOM.desktop.hidden = false; DOM.deskBtn.setAttribute('aria-expanded', 'true');
+        Desk.icons.querySelector('button').focus();
+      },
+      hide() { DOM.desktop.hidden = true; DOM.deskBtn.setAttribute('aria-expanded', 'false'); DOM.deskBtn.focus(); },
+      /** After the tracklist changes. */
+      refresh() { if (Desk.icons && !DOM.desktop.hidden) Desk.render(); },
+
+      bind() {
+        const bar = document.createElement('div'), title = document.createElement('h2'), hint = document.createElement('p'), close = document.createElement('button');
+        bar.className = 'desk-bar'; title.id = 'deskTitle'; title.textContent = 'Library desktop';
+        hint.className = 'desk-hint'; hint.textContent = 'Open a folder, then double-click a track or drag it onto the turntable. Esc closes.';
+        close.type = 'button'; close.textContent = 'Close';
+        Desk.icons = document.createElement('div'); Desk.icons.className = 'desk-icons';
+        Desk.wins = document.createElement('div'); Desk.wins.className = 'desk-windows';
+        bar.append(title, hint, close);
+        DOM.desktop.append(bar, Desk.icons, Desk.wins);
+        DOM.desktop.setAttribute('role', 'dialog'); DOM.desktop.setAttribute('aria-modal', 'true'); DOM.desktop.setAttribute('aria-labelledby', title.id);
+        DOM.deskBtn.setAttribute('aria-expanded', 'false');
+        DOM.deskBtn.addEventListener('click', () => { AudioEngine.ensure(); AudioEngine.playClick(); DOM.desktop.hidden ? Desk.show() : Desk.hide(); });
+        close.addEventListener('click', Desk.hide);
+        // captured on the document, so Esc works wherever focus is and no deck shortcut sees it
+        document.addEventListener('keydown', e => {
+          if (DOM.desktop.hidden || e.key !== 'Escape') return;
+          e.stopPropagation();
+          const w = Desk.front();
+          if (w) { w.remove(); Desk.focusFront(); } else Desk.hide();
+        }, true);
+      }
+    };
+
     // ─── ANIMATION ───────────────────────────────────────────────
     const Animation = {
       tick(ts) {
@@ -2516,6 +3107,8 @@
           }
         }
 
+        Viz.frame(dt / 1000);
+
         if (State.playing && State.needleOn && State.analyser) {
           const level = AudioEngine.getBassLevel();
           UI.drawBassRing(level);
@@ -2541,6 +3134,9 @@
       Events.setupGlobal();
       Events.setupDragDrop();
       Events.setupKeyboard();
+      Geq.mount();
+      Viz.bind();
+      Desk.bind();
 
       const prefs = Persistence.loadPrefs();
       if (!prefs.hasCustomColors && prefs.lightMode === undefined) {

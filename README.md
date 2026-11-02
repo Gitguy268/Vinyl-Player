@@ -46,10 +46,15 @@ Sound Effects & EQ
 ------------------
 
 - 3-band EQ: Bass, Mid, Treble.
+- Graphic EQ panel: Winamp's ten bands and preamp after the 3-band EQ, its 17
+  presets, and loading of Winamp .eqf preset files. Off by default; a trim
+  ahead of it takes back any boost so it does not clip.
 - Vinyl noise: adds analog crackle while playing.
 - Scratch mode: turn the record by hand for a DJ-style scratch sound.
 - Effects toggle: enables/disables the mechanical click and clunk sounds.
 - A bass-reactive glow ring pulses around the label while music plays.
+- Visualizer: Lines (a ridgeline), Scope, Spectrogram or Radial covers the
+  label while a record plays. Off by default and under reduced motion.
 
 
 Appearance
@@ -64,6 +69,9 @@ Appearance
   for distraction-free listening.
 - Record Info panel: view and edit track and album details, including your
   own liner notes.
+- Desktop: the library as a desktop, with artists and albums as folders in
+  movable windows. Double-click a track, or drag it onto the Turntable icon,
+  to play it. Escape closes the front window, then the desktop.
 
 
 Keyboard Shortcuts
@@ -85,7 +93,9 @@ Data & Privacy
 
 - Everything happens locally in your browser. No files are uploaded anywhere.
 - Tracks are stored in the browser's IndexedDB; preferences and album info are
-  stored in localStorage.
+  stored in localStorage. The graphic EQ is kept under its own keys
+  (vinyl-eq, vinyl-eq-presets). The other vinyl players read them
+  too when opened as local files in the same browser.
 - Clearing your browser's site data for this file will remove saved tracks and
   settings.
 
@@ -104,7 +114,20 @@ Files
 - index.html   The entire application (HTML, CSS, and JavaScript).
 
 
-License
--------
+License and attributions
+------------------------
 
 MIT. See LICENSE.
+
+- The graphic EQ uses the band layout and the 17 built-in preset values of
+  Webamp (https://github.com/captbaritone/webamp, MIT, copyright 2015 Jordan
+  Eldredge); its .eqf reader is written from Webamp's format notes. No Winamp
+  skin or artwork is used. Winamp is a trademark of its owner; this project
+  is not affiliated with Winamp, Nullsoft or Webamp.
+- The library desktop follows the idea of Winampify
+  (https://github.com/remigallego/winampify, MIT). No code was taken.
+- The Lines, Scope, Spectrogram and Radial visualizers are ideas found through
+  awesome-audio-visualization
+  (https://github.com/willianjusten/awesome-audio-visualization, CC0), among
+  them its "Lines" experiment and the "Awesome Audio Player" and
+  "CircleLineNERDDISCO" pens. They are drawn from scratch.
