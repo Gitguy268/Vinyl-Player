@@ -131,3 +131,17 @@ MIT. See LICENSE.
   (https://github.com/willianjusten/awesome-audio-visualization, CC0), among
   them its "Lines" experiment and the "Awesome Audio Player" and
   "CircleLineNERDDISCO" pens. They are drawn from scratch.
+
+<!-- run-steps:start -->
+## Run it locally, step by step
+
+1. **Get the code:**
+
+   ```sh
+   git clone https://github.com/Gitguy268/Vinyl-Player.git
+   cd Vinyl-Player
+   ```
+
+2. **Open `index.html`** by double-clicking it. There is nothing to install or build.
+<!-- run-steps:end -->
+
