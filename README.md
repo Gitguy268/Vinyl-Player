@@ -132,6 +132,10 @@ MIT. See LICENSE.
   them its "Lines" experiment and the "Awesome Audio Player" and
   "CircleLineNERDDISCO" pens. They are drawn from scratch.
 
+<!-- live-links -->
+**Live:** [gitguy268.github.io/Vinyl-Player](https://gitguy268.github.io/Vinyl-Player/) · [vinyl-player-chi.vercel.app](https://vinyl-player-chi.vercel.app)
+<!-- /live-links -->
+
 <!-- run-steps:start -->
 ## Run it locally, step by step
 
