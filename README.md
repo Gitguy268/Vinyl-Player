@@ -149,3 +149,7 @@ MIT. See LICENSE.
 2. **Open `index.html`** by double-clicking it. There is nothing to install or build.
 <!-- run-steps:end -->
 
+## Play albums from Vinyl Shelf
+
+[Vinyl Shelf](https://github.com/Gitguy268/vinyl-shelf) is a 3D record shelf over your music folder. Pull out an album and it plays here: the shelf opens this page with `?shelf` and hands the album over with the [vinyl-shelf/1 protocol](https://github.com/Gitguy268/vinyl-shelf/blob/main/docs/PROTOCOL.md). The album plays beside your saved library and never enters it.
+
